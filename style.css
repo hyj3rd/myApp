@@ -1,0 +1,154 @@
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f2f4f8;
+  font-family: -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+
+/* 화면 중앙에 표시되는 게임 카드 */
+.card {
+  background: #ffffff;
+  border-radius: 12px;
+  padding: 24px 28px 28px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+  text-align: center;
+}
+
+h1 {
+  margin: 0 0 16px;
+  font-size: 20px;
+  color: #1f2937;
+}
+
+/* 점수/레벨/최고 점수 표시 영역: 같은 모양의 타일 3개를 나란히 배치 */
+.stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.stat {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  background: #f8fafc;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 10px 6px;
+}
+
+.stat-label {
+  font-size: 11px;
+  color: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.stat-value {
+  font-size: 18px;
+  font-weight: 700;
+  color: #1f2937;
+  font-variant-numeric: tabular-nums;
+}
+
+/* 캔버스와 게임오버 오버레이를 겹치기 위한 컨테이너 */
+.board-wrap {
+  position: relative;
+  width: 400px;
+  height: 400px;
+}
+
+#game-canvas {
+  display: block;
+  width: 400px;
+  height: 400px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  background: #111827;
+}
+
+/* 게임오버 시 캔버스 위를 덮는 반투명 레이어 */
+.overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  background: rgba(17, 24, 39, 0.75);
+  border-radius: 8px;
+  color: #fff;
+}
+
+.overlay p {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 600;
+}
+
+.hidden {
+  display: none;
+}
+
+/* 난이도 선택 + 시작/일시정지 버튼을 세로로 묶는 컨트롤 영역 */
+.controls {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+/* 난이도 선택 영역: 라벨과 select를 가로로 나란히 배치 */
+.difficulty-select {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-size: 14px;
+  color: #4b5563;
+}
+
+.difficulty-select select {
+  padding: 6px 10px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 14px;
+  color: #1f2937;
+  background: #fff;
+}
+
+.difficulty-select select:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* 시작/일시정지 버튼을 가로로 나란히 배치 */
+.button-row {
+  display: flex;
+  gap: 10px;
+}
+
+button {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 8px;
+  background: #4f46e5;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+button:hover {
+  background: #4338ca;
+}

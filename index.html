@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>스네이크 게임</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="card">
+    <h1>스네이크 게임</h1>
+
+    <!-- 점수 / 레벨 / 최고 점수 표시: 동일한 모양의 타일 3개 -->
+    <div class="stats">
+      <div class="stat">
+        <span class="stat-label">점수</span>
+        <span class="stat-value" id="score">0</span>
+      </div>
+      <div class="stat">
+        <span class="stat-label">레벨</span>
+        <span class="stat-value" id="level">1</span>
+      </div>
+      <div class="stat">
+        <span class="stat-label">최고 점수</span>
+        <span class="stat-value" id="high-score">0</span>
+      </div>
+    </div>
+
+    <!-- 400x400, 20x20 격자로 그려지는 게임 캔버스 -->
+    <div class="board-wrap">
+      <canvas id="game-canvas" width="400" height="400"></canvas>
+
+      <!-- 게임오버 시에만 표시되는 오버레이 -->
+      <div id="game-over-overlay" class="overlay hidden">
+        <p>게임 오버</p>
+        <button id="restart-btn">다시 시작</button>
+      </div>
+    </div>
+
+    <!-- 난이도 선택 + 시작/일시정지 버튼을 한 컨트롤 영역으로 묶음 -->
+    <div class="controls">
+      <div class="difficulty-select">
+        <label for="difficulty">난이도:</label>
+        <select id="difficulty">
+          <option value="easy">쉬움</option>
+          <option value="normal" selected>보통</option>
+          <option value="hard">어려움</option>
+          <option value="veryhard">매우 어려움</option>
+        </select>
+      </div>
+
+      <div class="button-row">
+        <!-- 최초 진입 시 게임을 시작하는 버튼 -->
+        <button id="start-btn">게임 시작</button>
+
+        <!-- 게임 진행 중에만 표시되는 일시정지 버튼 -->
+        <button id="pause-btn" class="hidden">일시정지</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="main.js"></script>
+</body>
+</html>

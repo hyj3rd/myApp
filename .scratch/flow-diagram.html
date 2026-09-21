@@ -1,0 +1,228 @@
+<title>Snake Game Flow</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans+KR:wght@400;500;600&display=swap">
+<style>
+  :root {
+    --bg: #f6f7f5;
+    --surface: #ffffff;
+    --surface-2: #eef0ec;
+    --text: #1b211d;
+    --muted: #5c6660;
+    --border: #d7dcd3;
+    --accent: #1f8a4c;      /* 뱀 초록 계열 */
+    --accent-soft: #e3f3e8;
+    --warn: #c2410c;        /* 먹이/충돌 레드-오렌지 계열 */
+    --warn-soft: #fdece2;
+    --lane-loop: #eef4ee;
+    --lane-input: #f4efe7;
+    --code-bg: #eef0ec;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #12151a;
+      --surface: #191d23;
+      --surface-2: #1f242b;
+      --text: #e7ebe6;
+      --muted: #9aa39c;
+      --border: #2b3138;
+      --accent: #4ade80;
+      --accent-soft: #16321f;
+      --warn: #f0805a;
+      --warn-soft: #3a1f14;
+      --lane-loop: #182019;
+      --lane-input: #211d16;
+      --code-bg: #1f242b;
+    }
+  }
+
+  :root[data-theme="dark"] {
+    --bg: #12151a;
+    --surface: #191d23;
+    --surface-2: #1f242b;
+    --text: #e7ebe6;
+    --muted: #9aa39c;
+    --border: #2b3138;
+    --accent: #4ade80;
+    --accent-soft: #16321f;
+    --warn: #f0805a;
+    --warn-soft: #3a1f14;
+    --lane-loop: #182019;
+    --lane-input: #211d16;
+    --code-bg: #1f242b;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: "IBM Plex Sans KR", "Segoe UI", sans-serif;
+    padding: 40px 20px 64px;
+  }
+
+  .page {
+    max-width: 880px;
+    margin: 0 auto;
+  }
+
+  header {
+    margin-bottom: 28px;
+  }
+
+  .eyebrow {
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 12px;
+    letter-spacing: 0.08em;
+    color: var(--accent);
+    text-transform: uppercase;
+  }
+
+  h1 {
+    font-size: clamp(24px, 4vw, 32px);
+    margin: 6px 0 8px;
+    text-wrap: balance;
+  }
+
+  .sub {
+    color: var(--muted);
+    font-size: 14.5px;
+    max-width: 62ch;
+    line-height: 1.6;
+  }
+
+  .legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px 18px;
+    margin: 22px 0 8px;
+    padding: 14px 16px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+  }
+
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    color: var(--muted);
+  }
+
+  .swatch {
+    width: 12px;
+    height: 12px;
+    border-radius: 3px;
+    flex: none;
+  }
+
+  .swatch.lane-loop { background: var(--lane-loop); border: 1px solid var(--border); }
+  .swatch.lane-input { background: var(--lane-input); border: 1px solid var(--border); }
+  .swatch.decision { background: var(--warn-soft); border: 1px solid var(--warn); }
+  .swatch.action { background: var(--accent-soft); border: 1px solid var(--accent); }
+
+  .diagram-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 12px 8px 4px;
+    overflow-x: auto;
+  }
+
+  .diagram-card pre.mermaid {
+    margin: 0;
+    display: flex;
+    justify-content: center;
+    min-width: 640px;
+  }
+
+  .foot {
+    margin-top: 26px;
+    display: grid;
+    gap: 10px;
+    font-size: 13.5px;
+    color: var(--muted);
+    line-height: 1.7;
+  }
+
+  .foot code {
+    font-family: "IBM Plex Mono", monospace;
+    background: var(--code-bg);
+    padding: 1px 6px;
+    border-radius: 5px;
+    color: var(--text);
+    font-size: 12.5px;
+  }
+</style>
+
+<div class="page">
+  <header>
+    <div class="eyebrow">main.js — 실행 흐름</div>
+    <h1>스네이크 게임 흐름도</h1>
+    <p class="sub">시작/재시작, 120ms마다 도는 게임 루프(tick), 그리고 언제든 끼어드는 키 입력 — 세 갈래가 어떻게 맞물리는지 정리했습니다.</p>
+  </header>
+
+  <div class="legend">
+    <div class="legend-item"><span class="swatch lane-loop"></span>게임 루프 (setInterval)</div>
+    <div class="legend-item"><span class="swatch lane-input"></span>키 입력 (비동기 이벤트)</div>
+    <div class="legend-item"><span class="swatch decision"></span>분기 판단</div>
+    <div class="legend-item"><span class="swatch action"></span>상태 변경</div>
+  </div>
+
+  <div class="diagram-card">
+    <pre class="mermaid">
+flowchart TD
+    Load(["페이지 로드"]) --> Show["highScore 표시"]
+    Show --> Click{{"start 버튼 클릭"}}
+    Click --> Start["startGame()"]
+
+    subgraph LOOP["게임 루프 · setInterval(tick, 120ms)"]
+        direction TB
+        Start2["resetState() + draw()"] --> Fix["direction = nextDirection"]
+        Fix --> Head["새 head 좌표 계산"]
+        Head --> Hit{"벽 또는 자기 몸\n충돌?"}
+        Hit -- 예 --> End["endGame()"]
+        Hit -- 아니오 --> Push["snake.unshift(head)"]
+        Push --> Food{"head == food?"}
+        Food -- 예 --> Grow["score +10\nplaceFood()"]
+        Food -- 아니오 --> Pop["snake.pop() 꼬리 제거"]
+        Grow --> Draw["draw()"]
+        Pop --> Draw
+        Draw --> Fix
+    end
+
+    Start --> Start2
+
+    End --> Clear["clearInterval(loopId)"]
+    Clear --> Best{"score > highScore?"}
+    Best -- 예 --> Save["highScore 갱신\nlocalStorage 저장"]
+    Best -- 아니오 --> Overlay["게임오버 오버레이 표시"]
+    Save --> Overlay
+    Overlay --> Restart{{"restart 버튼 클릭"}}
+    Restart --> Start
+
+    subgraph INPUT["키 입력 · keydown (루프와 비동기)"]
+        direction TB
+        Key(["방향키 입력"]) --> Arrow{"방향키인가?"}
+        Arrow -- 아니오 --> Ignore["무시"]
+        Arrow -- 예 --> Opp{"현재 방향의\n정반대인가?"}
+        Opp -- 예 --> Ignore
+        Opp -- 아니오 --> Next["nextDirection 갱신"]
+    end
+
+    Next -. "다음 tick에 반영" .-> Fix
+
+    classDef loopStyle fill:#eef4ee,stroke:#1f8a4c,color:#1b211d;
+    classDef inputStyle fill:#f4efe7,stroke:#c2410c,color:#1b211d;
+    class LOOP loopStyle
+    class INPUT inputStyle
+    </pre>
+  </div>
+
+  <div class="foot">
+    <div>루프 안 상태 변경은 <code>tick()</code> 한 함수 안에서 순서대로 일어나지만, 키 입력은 <code>window.addEventListener("keydown", …)</code>로 완전히 별도 실행 흐름이라 아무 때나 끼어들 수 있습니다. 다만 <code>nextDirection</code>만 바꿔두고 실제 반영은 다음 <code>tick</code>이 맡아, 한 프레임 안에서 방향이 두 번 바뀌는 경합을 막습니다.</div>
+    <div>역방향 전환(예: 오른쪽 주행 중 왼쪽 키)은 <code>Opp</code> 분기에서 걸러져 머리가 바로 다음 몸통 칸으로 들어가는 즉사를 방지합니다.</div>
+  </div>
+</div>
