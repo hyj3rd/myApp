@@ -88,6 +88,8 @@ const pauseBtn = document.getElementById("pause-btn");
 const overlay = document.getElementById("game-over-overlay"); // 게임오버/퀘스트 성공 시 보여줄 오버레이
 const overlayMessage = document.getElementById("overlay-message");
 const successIcon = document.getElementById("success-icon");
+const confettiContainer = document.getElementById("confetti-container");
+const CONFETTI_COLORS = ["#39ff14", "#ff2e63", "#00e5ff", "#ffd23f"];
 
 // 게임 상태 (좌표는 모두 격자 단위 정수: 0~19)
 let snake = []; // 뱀 몸통. snake[0]이 머리, 배열 순서대로 몸통이 이어짐
@@ -411,6 +413,7 @@ function endGame() {
   overlayMessage.textContent = "게임 오버";
   overlay.classList.remove("overlay-success");
   successIcon.classList.add("hidden");
+  confettiContainer.innerHTML = ""; // 직전 판이 퀘스트 성공으로 끝났을 경우를 대비해 남은 폭죽 조각 정리
   overlay.classList.remove("hidden");
 }
 
@@ -421,6 +424,39 @@ function finishQuest() {
   overlay.classList.add("overlay-success");
   successIcon.classList.remove("hidden");
   overlay.classList.remove("hidden");
+  launchConfetti();
+}
+
+// 이미지 중앙에서 사방으로 터지는 폭죽 애니메이션. 조각마다 무작위 각도/거리/색/회전을 주고
+// 애니메이션이 끝나는 시점에 맞춰 스스로 DOM에서 제거해 계속 쌓이지 않게 함
+function launchConfetti() {
+  confettiContainer.innerHTML = ""; // 혹시 이전 조각이 덜 지워졌으면 먼저 비움
+
+  const PIECE_COUNT = 40;
+  const ANIMATION_MS = 1100;
+
+  for (let i = 0; i < PIECE_COUNT; i++) {
+    const piece = document.createElement("div");
+    piece.className = "confetti-piece";
+
+    const angle = Math.random() * Math.PI * 2;
+    const distance = 60 + Math.random() * 100;
+    const dx = Math.cos(angle) * distance;
+    const dy = Math.sin(angle) * distance;
+    const rotation = Math.random() * 720 - 360;
+
+    piece.style.setProperty("--dx", `${dx}px`);
+    piece.style.setProperty("--dy", `${dy}px`);
+    piece.style.setProperty("--rot", `${rotation}deg`);
+    piece.style.background = CONFETTI_COLORS[Math.floor(Math.random() * CONFETTI_COLORS.length)];
+    piece.style.animationDelay = `${Math.random() * 150}ms`;
+
+    confettiContainer.appendChild(piece);
+  }
+
+  setTimeout(() => {
+    confettiContainer.innerHTML = "";
+  }, ANIMATION_MS + 200);
 }
 
 // 일시정지/재개 토글. setInterval 자체는 건드리지 않고 tick()의 isPaused 플래그만
