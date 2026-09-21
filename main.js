@@ -4,13 +4,66 @@ const CELL_SIZE = 400 / GRID_SIZE;
 // 난이도별 시작 틱 간격(ms). select의 value와 그대로 매칭됨
 const DIFFICULTY_TICK_MS = { easy: 200, normal: 150, hard: 100, veryhard: 50 };
 const DEFAULT_DIFFICULTY = "normal";
-// 레벨업에 필요한 점수 단위 / 레벨업 1회당 틱 간격을 줄이는 양(ms)
-const POINTS_PER_LEVEL = 50;
-const LEVEL_SPEED_STEP_MS = 10;
+// 레벨업에 필요한 점수 기준: 레벨 1->2는 LEVEL_UP_BASE_POINTS점, 그 다음부터는 레벨이 오를 때마다
+// 다음 레벨업에 필요한 점수가 LEVEL_UP_STEP_POINTS씩 더 늘어남 (50 -> 60 -> 70 -> 80 ...점씩 필요,
+// 누적 기준으로는 50, 110, 180, 260 ...). 후반으로 갈수록 레벨업이 점점 어려워짐
+const LEVEL_UP_BASE_POINTS = 50;
+const LEVEL_UP_STEP_POINTS = 10;
+// 레벨업 1회당 틱 간격에 곱하는 배율(0.95 = 5%씩 빨라짐)
+// 고정 ms를 빼는 대신 비율로 줄여야 간격이 작아진 후반에도 체감 속도 증가폭이 초반과 비슷하게 유지됨
+// (같은 10ms라도 150ms에서 빼면 7% 증가지만 30ms에서 빼면 33% 증가라 후반에 확 빨라지는 것처럼 느껴졌음)
+const LEVEL_SPEED_FACTOR = 0.95;
 // 속도 하한선. 레벨이 계속 올라도 이 값보다 빨라지지 않음(레벨 표시 자체는 계속 증가)
 const MIN_TICK_MS = 20;
 // 최고 점수를 저장할 때 쓰는 localStorage 키 이름
 const HIGH_SCORE_KEY = "snake-high-score";
+
+// 퀘스트 모드에서 문구를 먹이 칸들로 표현할 때 쓰는 4x6 픽셀 폰트.
+// 각 문자는 6행 x 4열 문자열 배열이며 "1"이 켜진(=먹이가 배치될) 칸을 뜻함.
+const FONT = {
+  " ": ["0000", "0000", "0000", "0000", "0000", "0000"],
+  0: ["0110", "1001", "1001", "1001", "1001", "0110"],
+  1: ["0010", "0110", "0010", "0010", "0010", "0111"],
+  2: ["0110", "1001", "0001", "0010", "0100", "1111"],
+  3: ["1110", "0001", "0110", "0001", "0001", "1110"],
+  4: ["0011", "0101", "1001", "1111", "0001", "0001"],
+  5: ["1111", "1000", "1110", "0001", "0001", "1110"],
+  6: ["0110", "1000", "1110", "1001", "1001", "0110"],
+  7: ["1111", "0001", "0010", "0100", "0100", "0100"],
+  8: ["0110", "1001", "0110", "1001", "1001", "0110"],
+  9: ["0110", "1001", "1001", "0111", "0001", "0110"],
+  A: ["0110", "1001", "1001", "1111", "1001", "1001"],
+  B: ["1110", "1001", "1110", "1001", "1001", "1110"],
+  C: ["0111", "1000", "1000", "1000", "1000", "0111"],
+  D: ["1110", "1001", "1001", "1001", "1001", "1110"],
+  E: ["1111", "1000", "1110", "1000", "1000", "1111"],
+  F: ["1111", "1000", "1110", "1000", "1000", "1000"],
+  G: ["0111", "1000", "1000", "1011", "1001", "0111"],
+  H: ["1001", "1001", "1111", "1001", "1001", "1001"],
+  I: ["1110", "0100", "0100", "0100", "0100", "1110"],
+  J: ["0111", "0001", "0001", "0001", "1001", "0110"],
+  K: ["1001", "1010", "1100", "1100", "1010", "1001"],
+  L: ["1000", "1000", "1000", "1000", "1000", "1111"],
+  M: ["1001", "1111", "1001", "1001", "1001", "1001"],
+  N: ["1001", "1101", "1011", "1001", "1001", "1001"],
+  O: ["0110", "1001", "1001", "1001", "1001", "0110"],
+  P: ["1110", "1001", "1110", "1000", "1000", "1000"],
+  Q: ["0110", "1001", "1001", "1001", "1011", "0111"],
+  R: ["1110", "1001", "1110", "1010", "1001", "1001"],
+  S: ["0111", "1000", "0110", "0001", "0001", "1110"],
+  T: ["1111", "0100", "0100", "0100", "0100", "0100"],
+  U: ["1001", "1001", "1001", "1001", "1001", "0110"],
+  V: ["1001", "1001", "1001", "1001", "0110", "0110"],
+  W: ["1001", "1001", "1001", "1111", "1111", "1001"],
+  X: ["1001", "1001", "0110", "0110", "1001", "1001"],
+  Y: ["1001", "1001", "0110", "0100", "0100", "0100"],
+  Z: ["1111", "0001", "0010", "0100", "1000", "1111"],
+};
+const FONT_CHAR_W = 4;
+const FONT_CHAR_H = 6;
+const FONT_GAP_X = 1;
+const FONT_GAP_Y = 1;
+const QUEST_CHARS_PER_ROW = Math.floor((GRID_SIZE + FONT_GAP_X) / (FONT_CHAR_W + FONT_GAP_X)); // 20x20 격자에 4x6 폰트 기준 한 줄에 들어가는 글자 수 (=4)
 
 // 화면 요소 참조 (한 번만 조회해서 재사용)
 const canvas = document.getElementById("game-canvas");
@@ -20,10 +73,13 @@ const levelEl = document.getElementById("level");
 const highScoreEl = document.getElementById("high-score");
 const difficultySelect = document.getElementById("difficulty");
 const snakeColorInput = document.getElementById("snake-color");
+const modeSelect = document.getElementById("game-mode");
+const questSelect = document.getElementById("quest-phrase");
 const startBtn = document.getElementById("start-btn");
 const restartBtn = document.getElementById("restart-btn");
 const pauseBtn = document.getElementById("pause-btn");
-const overlay = document.getElementById("game-over-overlay"); // 게임오버 시 보여줄 오버레이
+const overlay = document.getElementById("game-over-overlay"); // 게임오버/퀘스트 성공 시 보여줄 오버레이
+const overlayMessage = document.getElementById("overlay-message");
 
 // 게임 상태 (좌표는 모두 격자 단위 정수: 0~19)
 let snake = []; // 뱀 몸통. snake[0]이 머리, 배열 순서대로 몸통이 이어짐
@@ -37,11 +93,63 @@ let baseTickMs = DIFFICULTY_TICK_MS[DEFAULT_DIFFICULTY]; // 이번 판 시작 �
 let highScore = Number(localStorage.getItem(HIGH_SCORE_KEY)) || 0; // 저장된 값이 없으면 0
 let loopId = null; // setInterval의 타이머 id (게임 루프 제어용, 없으면 null)
 
+// 퀘스트 모드 상태 (일반 모드에서는 계속 빈 값으로 유지됨)
+let gameMode = "normal"; // "normal" | "quest"
+let questCells = []; // 문구를 이루는 전체 목표 칸 (고정)
+let questRemaining = []; // 아직 먹지 않은 목표 칸 = 지금 화면에 동시에 떠 있는 먹이들
+
 highScoreEl.textContent = highScore;
+
+// 문구 문자열을 받아 4x6 폰트 기준으로 격자에 중앙 정렬된 목표 칸 좌표 배열을 만듦.
+// 띄어쓰기 단위로 줄바꿈한다(단어마다 한 줄). 한 줄에 다 못 들어갈 만큼 긴 단어만 예외적으로
+// QUEST_CHARS_PER_ROW 기준으로 추가 줄바꿈. 각 줄은 그 줄의 글자 수 기준으로 가로 중앙 정렬, 전체는 세로 중앙 정렬한다.
+function buildQuestCells(text) {
+  const words = text.toUpperCase().split(" ").filter((word) => word.length > 0);
+  const rows = [];
+  words.forEach((word) => {
+    const chars = word.split("").filter((char) => FONT[char]);
+    for (let i = 0; i < chars.length; i += QUEST_CHARS_PER_ROW) {
+      rows.push(chars.slice(i, i + QUEST_CHARS_PER_ROW));
+    }
+  });
+  if (rows.length === 0) {
+    return [];
+  }
+
+  const totalHeight = rows.length * FONT_CHAR_H + (rows.length - 1) * FONT_GAP_Y;
+  const offsetY = Math.floor((GRID_SIZE - totalHeight) / 2);
+
+  const cells = [];
+  rows.forEach((rowChars, rowIndex) => {
+    const rowWidth = rowChars.length * FONT_CHAR_W + (rowChars.length - 1) * FONT_GAP_X;
+    const offsetX = Math.floor((GRID_SIZE - rowWidth) / 2);
+    const rowY = offsetY + rowIndex * (FONT_CHAR_H + FONT_GAP_Y);
+
+    rowChars.forEach((char, charIndex) => {
+      const charX = offsetX + charIndex * (FONT_CHAR_W + FONT_GAP_X);
+      FONT[char].forEach((bits, py) => {
+        for (let px = 0; px < FONT_CHAR_W; px++) {
+          if (bits[px] === "1") {
+            cells.push({ x: charX + px, y: rowY + py });
+          }
+        }
+      });
+    });
+  });
+
+  return cells;
+}
+
+// targetLevel(예: 3)에 도달하는 데 필요한 누적 점수.
+// 레벨업 간 필요 점수가 50, 60, 70...으로 점점 늘어나므로 등차수열 합 공식으로 계산
+function pointsRequiredForLevel(targetLevel) {
+  const gapCount = targetLevel - 1; // 레벨 1에서 targetLevel까지 거쳐야 할 레벨업 횟수
+  return LEVEL_UP_BASE_POINTS * gapCount + (LEVEL_UP_STEP_POINTS * gapCount * (gapCount - 1)) / 2;
+}
 
 // 난이도(baseTickMs)와 레벨을 반영한 실제 틱 간격 계산 (MIN_TICK_MS 밑으로 내려가지 않음)
 function effectiveTickMs() {
-  return Math.max(MIN_TICK_MS, baseTickMs - (level - 1) * LEVEL_SPEED_STEP_MS);
+  return Math.max(MIN_TICK_MS, baseTickMs * Math.pow(LEVEL_SPEED_FACTOR, level - 1));
 }
 
 // 현재 effectiveTickMs() 기준으로 게임 루프를 (재)가동
@@ -57,12 +165,8 @@ function restartLoop() {
 // 뱀/점수/방향을 초기 상태로 되돌리고 새 먹이를 배치
 // (start/restart 버튼을 누를 때마다 호출되어 이전 게임 상태를 완전히 리셋함)
 function resetState() {
-  // 뱀은 3칸짜리 몸으로 시작, 가로 방향(오른쪽)을 향함
-  snake = [
-    { x: 8, y: 10 }, // 머리
-    { x: 7, y: 10 },
-    { x: 6, y: 10 }, // 꼬리
-  ];
+  // 뱀은 머리 한 칸으로 시작, 가로 방향(오른쪽)을 향함
+  snake = [{ x: 8, y: 10 }];
   direction = { x: 1, y: 0 };
   nextDirection = { x: 1, y: 0 };
   score = 0;
@@ -70,10 +174,19 @@ function resetState() {
   isPaused = false;
   scoreEl.textContent = score;
   levelEl.textContent = level;
-  placeFood();
+
+  // 퀘스트 모드면 문구 전체 모양을 이루는 칸들을 한꺼번에 먹이로 배치, 일반 모드면 비워둠
+  if (gameMode === "quest") {
+    questCells = buildQuestCells(questSelect.value);
+    questRemaining = [...questCells];
+  } else {
+    questCells = [];
+    questRemaining = [];
+    placeFood(); // 일반 모드만 무작위 먹이 하나를 배치 (퀘스트 모드는 questRemaining 자체가 먹이 목록)
+  }
 }
 
-// 뱀의 몸과 겹치지 않는 위치에 먹이를 랜덤 배치
+// 뱀의 몸과 겹치지 않는 위치에 먹이를 랜덤 배치 (일반 모드 전용)
 // do-while로 몸통과 겹치는 좌표가 나오면 계속 다시 뽑음
 function placeFood() {
   let position;
@@ -89,13 +202,21 @@ function placeFood() {
 // 현재 상태(뱀, 먹이)를 캔버스에 그림
 // 매 프레임마다 배경을 통째로 덮어 그린 뒤 먹이 -> 뱀 순서로 그림 (뒤에 그릴수록 위에 보임)
 function draw() {
-  // 배경(어두운 남색)으로 캔버스 전체를 초기화
-  ctx.fillStyle = "#111827";
+  // 배경(검정)으로 캔버스 전체를 초기화 - 레트로 아케이드 느낌
+  ctx.fillStyle = "#000000";
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-  // 먹이는 빨간 사각형 한 칸
-  ctx.fillStyle = "#ef4444";
-  ctx.fillRect(food.x * CELL_SIZE, food.y * CELL_SIZE, CELL_SIZE, CELL_SIZE);
+  if (gameMode === "quest") {
+    // 아직 안 먹은 칸(=지금 동시에 떠 있는 먹이들)만 네온 핑크로 표시. 먹으면 questRemaining에서 빠져 그냥 사라짐
+    ctx.fillStyle = "#ff2e63";
+    questRemaining.forEach((cell) => {
+      ctx.fillRect(cell.x * CELL_SIZE, cell.y * CELL_SIZE, CELL_SIZE - 1, CELL_SIZE - 1);
+    });
+  } else {
+    // 먹이는 네온 핑크 사각형 한 칸
+    ctx.fillStyle = "#ff2e63";
+    ctx.fillRect(food.x * CELL_SIZE, food.y * CELL_SIZE, CELL_SIZE, CELL_SIZE);
+  }
 
   // 뱀 색상은 사용자가 선택한 값을 사용. -1px 여백을 줘서 칸 사이에 격자선처럼 틈이 보이게 함
   ctx.fillStyle = snakeColorInput.value;
@@ -133,20 +254,43 @@ function tick() {
   // 새 머리를 배열 맨 앞에 추가해 뱀을 한 칸 전진시킴
   snake.unshift(head);
 
-  const ateFood = head.x === food.x && head.y === food.y;
+  // 퀘스트 모드는 화면에 동시에 떠 있는 questRemaining 칸 중 아무 곳이나 먹으면 됨.
+  // 일반 모드는 기존처럼 단일 food 좌표만 확인
+  const questHitIndex =
+    gameMode === "quest" ? questRemaining.findIndex((cell) => cell.x === head.x && cell.y === head.y) : -1;
+  const ateFood = gameMode === "quest" ? questHitIndex !== -1 : head.x === food.x && head.y === food.y;
+
   if (ateFood) {
-    // 먹이를 먹었으면 점수 올리고 새 먹이를 배치 (꼬리를 자르지 않아 몸 길이가 1 늘어남)
+    // 먹이를 먹었으면 점수 올림 (일반 모드는 꼬리를 안 잘라 몸 길이가 1 늘어남)
     score += 10;
     scoreEl.textContent = score;
-    placeFood();
 
-    // score는 항상 10 단위로 증가하고 POINTS_PER_LEVEL(50)은 10의 배수라 한 번에
-    // 두 레벨을 건너뛸 일은 없지만, 절대 점수 기준으로 계산해 항상 안전하게 처리
-    const targetLevel = Math.floor(score / POINTS_PER_LEVEL) + 1;
-    if (targetLevel > level) {
-      level = targetLevel;
+    if (gameMode === "quest") {
+      // 먹은 칸은 목록에서 제거해 화면에서 사라지게 함. 퀘스트 모드는 몸 길이가 늘어나지 않도록 꼬리도 자름
+      questRemaining.splice(questHitIndex, 1);
+      snake.pop();
+    }
+
+    // 다음 레벨업에 필요한 누적 점수를 넘었는지 확인 (레벨업 간 필요 점수가 점점 늘어나므로 while로 확인)
+    let leveledUp = false;
+    while (score >= pointsRequiredForLevel(level + 1)) {
+      level += 1;
+      leveledUp = true;
+    }
+    if (leveledUp) {
       levelEl.textContent = level;
       restartLoop(); // 더 빨라진 간격으로 루프 재가동 (일시정지 여부와 무관하게 안전)
+    }
+
+    if (gameMode === "quest") {
+      if (questRemaining.length === 0) {
+        // 문구의 모든 칸을 다 먹었으면 마지막 프레임을 그리고 성공 처리
+        draw();
+        finishQuest();
+        return;
+      }
+    } else {
+      placeFood(); // 일반 모드만 다음 무작위 먹이를 새로 배치
     }
   } else {
     // 먹지 않았으면 꼬리를 제거해 길이를 유지 (앞에 추가 + 뒤 제거 = 이동한 것처럼 보임)
@@ -161,20 +305,24 @@ function tick() {
 function startGame() {
   // 난이도 select 값을 이번 판의 기준 속도로 고정 (게임 중 select를 바꿔도 이번 판엔 미반영)
   baseTickMs = DIFFICULTY_TICK_MS[difficultySelect.value] || DIFFICULTY_TICK_MS[DEFAULT_DIFFICULTY];
+  gameMode = modeSelect.value; // 모드도 이번 판 기준으로 고정
   resetState();
-  overlay.classList.add("hidden"); // 게임오버 화면 숨기기
+  overlay.classList.add("hidden"); // 게임오버/퀘스트 성공 화면 숨기기
   startBtn.classList.add("hidden"); // 시작 버튼은 한 번만 보이도록 숨기기
 
   pauseBtn.classList.remove("hidden");
   pauseBtn.textContent = "일시정지";
-  difficultySelect.disabled = true; // 게임 중엔 난이도를 바꿔도 반영되지 않으므로 비활성화
+  // 게임 중엔 바꿔도 반영되지 않으므로 모드/문구/난이도를 비활성화
+  difficultySelect.disabled = true;
+  modeSelect.disabled = true;
+  questSelect.disabled = true;
 
   draw();
   restartLoop();
 }
 
-// 충돌 발생 시 루프를 멈추고 최고 점수 갱신 후 오버레이 표시
-function endGame() {
+// 게임 종료(충돌/퀘스트 성공) 공통 처리: 루프 정지, 최고 점수 갱신, 컨트롤 재활성화
+function stopGame() {
   clearInterval(loopId);
   loopId = null;
   isPaused = false; // 다음 판을 위해 일시정지 상태 초기화
@@ -187,8 +335,26 @@ function endGame() {
   }
 
   pauseBtn.classList.add("hidden");
-  difficultySelect.disabled = false; // 다음 판 시작 전에 난이도를 다시 고를 수 있게 함
-  overlay.classList.remove("hidden"); // 게임오버 오버레이(재시작 버튼 포함) 표시
+  // 다음 판 시작 전에 모드/난이도를 다시 고를 수 있게 함. 문구는 퀘스트 모드일 때만 활성화
+  difficultySelect.disabled = false;
+  modeSelect.disabled = false;
+  questSelect.disabled = modeSelect.value !== "quest";
+}
+
+// 충돌 발생 시 루프를 멈추고 "게임 오버" 오버레이 표시
+function endGame() {
+  stopGame();
+  overlayMessage.textContent = "게임 오버";
+  overlay.classList.remove("overlay-success");
+  overlay.classList.remove("hidden");
+}
+
+// 퀘스트의 모든 목표 칸을 다 먹었을 때 루프를 멈추고 "퀘스트 성공" 오버레이 표시
+function finishQuest() {
+  stopGame();
+  overlayMessage.textContent = "퀘스트 성공! 🎉";
+  overlay.classList.add("overlay-success");
+  overlay.classList.remove("hidden");
 }
 
 // 일시정지/재개 토글. setInterval 자체는 건드리지 않고 tick()의 isPaused 플래그만
@@ -216,6 +382,10 @@ window.addEventListener("keydown", (event) => {
     return; // 방향키가 아니면 무시
   }
 
+  // 방향키의 브라우저 기본 동작(페이지 스크롤)을 막음.
+  // 이걸 안 하면 방향키를 누를 때마다 뱀 조작과 별개로 화면 전체가 위아래/좌우로 스크롤되며 흔들려 보임
+  event.preventDefault();
+
   // 현재 진행 방향의 정반대인지 확인 (x, y 부호가 둘 다 반대)
   const isOpposite = requested.x === -direction.x && requested.y === -direction.y;
   if (!isOpposite) {
@@ -234,4 +404,9 @@ snakeColorInput.addEventListener("input", () => {
   if (snake.length > 0) {
     draw();
   }
+});
+
+// 문구 드롭다운은 항상 표시하되, 퀘스트 모드일 때만 실제로 선택할 수 있게 활성화
+modeSelect.addEventListener("change", () => {
+  questSelect.disabled = modeSelect.value !== "quest";
 });

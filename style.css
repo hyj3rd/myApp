@@ -8,24 +8,44 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #f2f4f8;
-  font-family: -apple-system, "Segoe UI", Roboto, sans-serif;
+  /* 어두운 배경 위에 옅은 스캔라인을 깔아 CRT 화면 느낌을 냄 */
+  background: repeating-linear-gradient(
+      0deg,
+      rgba(255, 255, 255, 0.03) 0px,
+      rgba(255, 255, 255, 0.03) 1px,
+      transparent 1px,
+      transparent 3px
+    ),
+    #0f0f1b;
+  font-family: "Courier New", monospace;
 }
 
-/* 화면 중앙에 표시되는 게임 카드 */
+/* 픽셀 폰트는 제목/버튼/점수처럼 짧은 텍스트에만 사용 (긴 텍스트에 쓰면 폭이 너무 커짐) */
+h1,
+button,
+.stat-label,
+.stat-value,
+.overlay p {
+  font-family: "Press Start 2P", "Courier New", monospace;
+}
+
+/* 화면 중앙에 표시되는 게임 카드. 모서리를 각지게 하고 두꺼운 네온 테두리 + 그림자로 8비트 느낌 */
 .card {
   width: 456px;
-  background: #ffffff;
-  border-radius: 12px;
+  background: #1a1a2e;
+  border: 4px solid #39ff14;
+  border-radius: 0;
   padding: 24px 28px 28px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+  box-shadow: 8px 8px 0 #000000;
   text-align: center;
 }
 
 h1 {
-  margin: 0 0 16px;
-  font-size: 20px;
-  color: #1f2937;
+  margin: 0 0 20px;
+  font-size: 16px;
+  color: #39ff14;
+  text-shadow: 2px 2px 0 #000;
+  letter-spacing: 1px;
 }
 
 /* 점수/레벨/최고 점수 표시 영역: 같은 모양의 타일 3개를 나란히 배치 */
@@ -33,31 +53,30 @@ h1 {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 8px;
-  margin-bottom: 16px;
+  margin-bottom: 20px;
 }
 
 .stat {
   display: flex;
   flex-direction: column;
-  gap: 2px;
-  background: #f8fafc;
-  border: 1px solid #e5e7eb;
-  border-radius: 8px;
-  padding: 10px 6px;
+  gap: 6px;
+  background: #000000;
+  border: 2px solid #00e5ff;
+  border-radius: 0;
+  padding: 10px 4px;
 }
 
 .stat-label {
-  font-size: 11px;
-  color: #6b7280;
+  font-size: 8px;
+  color: #00e5ff;
   text-transform: uppercase;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.05em;
 }
 
 .stat-value {
-  font-size: 18px;
-  font-weight: 700;
-  color: #1f2937;
-  font-variant-numeric: tabular-nums;
+  font-size: 14px;
+  color: #ffd23f;
+  text-shadow: 1px 1px 0 #000;
 }
 
 /* 캔버스와 게임오버 오버레이를 겹치기 위한 컨테이너 */
@@ -71,9 +90,10 @@ h1 {
   display: block;
   width: 400px;
   height: 400px;
-  border: 1px solid #d1d5db;
-  border-radius: 8px;
-  background: #111827;
+  border: 4px solid #39ff14;
+  border-radius: 0;
+  background: #000000;
+  image-rendering: pixelated;
 }
 
 /* 게임오버 시 캔버스 위를 덮는 반투명 레이어 */
@@ -84,72 +104,79 @@ h1 {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 12px;
-  background: rgba(17, 24, 39, 0.75);
-  border-radius: 8px;
-  color: #fff;
+  gap: 16px;
+  background: rgba(0, 0, 0, 0.85);
+  border-radius: 0;
+  color: #ff2e63;
 }
 
 .overlay p {
   margin: 0;
-  font-size: 20px;
-  font-weight: 600;
+  font-size: 16px;
+  text-shadow: 2px 2px 0 #000;
+}
+
+/* 퀘스트 성공 시 게임오버 오버레이 위에 덧붙는 네온 그린 색상 */
+.overlay.overlay-success {
+  background: rgba(0, 0, 0, 0.85);
+  color: #39ff14;
 }
 
 .hidden {
   display: none;
 }
 
-/* 난이도 선택 + 시작/일시정지 버튼을 세로로 묶는 컨트롤 영역 */
+/* 컨트롤 영역: 2열 그리드로 배치해 모드/난이도가 왼쪽 열, 문구/색상이 오른쪽 열에 세로로 줄맞춰 보이게 함.
+   마지막 줄인 버튼 행만 두 열을 모두 가로질러 가운데 배치 */
 .controls {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 12px;
-  margin-top: 16px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  column-gap: 24px;
+  row-gap: 12px;
+  justify-items: center;
+  margin-top: 20px;
 }
 
-/* 난이도 선택 영역: 라벨과 select를 가로로 나란히 배치 */
-.difficulty-select {
+/* 라벨 하나 + 컨트롤 하나로 이루어진 그룹. 라벨 너비를 고정해 같은 열의 select들이 서로 줄맞음 */
+.control-group {
   display: flex;
   align-items: center;
-  justify-content: center;
   gap: 8px;
-  font-size: 14px;
-  color: #4b5563;
+  width: 100%;
+  justify-content: center;
+  font-size: 12px;
+  color: #00e5ff;
 }
 
-.difficulty-select select {
-  padding: 6px 10px;
-  border: 1px solid #d1d5db;
-  border-radius: 6px;
-  font-size: 14px;
-  color: #1f2937;
-  background: #fff;
+.control-group label {
+  min-width: 44px;
+  text-align: right;
 }
 
-.difficulty-select select:disabled {
-  opacity: 0.6;
+.control-group select {
+  flex: 1;
+  max-width: 130px;
+  padding: 6px 8px;
+  border: 2px solid #00e5ff;
+  border-radius: 0;
+  font-family: "Courier New", monospace;
+  font-size: 13px;
+  color: #e6e6e6;
+  background: #000000;
+}
+
+.control-group select:disabled {
+  opacity: 0.5;
   cursor: not-allowed;
 }
 
-/* 뱀 색상 선택 영역: 난이도 선택과 같은 가로 배치 스타일 재사용 */
-.color-select {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  font-size: 14px;
-  color: #4b5563;
-}
-
-.color-select input[type="color"] {
+.control-group input[type="color"] {
   width: 36px;
   height: 28px;
   padding: 2px;
-  border: 1px solid #d1d5db;
-  border-radius: 6px;
-  background: #fff;
+  border: 2px solid #00e5ff;
+  border-radius: 0;
+  background: #000000;
   cursor: pointer;
 }
 
@@ -157,22 +184,30 @@ h1 {
    게임오버 시 두 버튼이 모두 hidden 처리돼도 줄 높이가 0으로 줄어들어
    카드가 수직으로 들썩이지 않도록 버튼 높이만큼 최소 높이를 확보한다. */
 .button-row {
+  grid-column: 1 / -1;
   display: flex;
-  gap: 10px;
+  gap: 12px;
   min-height: 40px;
 }
 
+/* NES 게임기 버튼처럼 입체감 있는 픽셀 버튼: 왼쪽/위는 밝게, 오른쪽/아래는 어둡게 해서 튀어나와 보이게 함 */
 button {
-  padding: 10px 20px;
+  padding: 10px 16px;
   border: none;
-  border-radius: 8px;
-  background: #4f46e5;
+  border-radius: 0;
+  background: #ff2e63;
   color: #fff;
-  font-size: 14px;
-  font-weight: 600;
+  font-size: 10px;
+  letter-spacing: 0.5px;
   cursor: pointer;
+  box-shadow: inset 3px 3px 0 rgba(255, 255, 255, 0.35), inset -3px -3px 0 rgba(0, 0, 0, 0.35);
 }
 
 button:hover {
-  background: #4338ca;
+  background: #ff5c85;
+}
+
+/* 눌렀을 때는 입체 방향을 반대로 뒤집어 눌린 느낌을 줌 */
+button:active {
+  box-shadow: inset -3px -3px 0 rgba(255, 255, 255, 0.35), inset 3px 3px 0 rgba(0, 0, 0, 0.35);
 }

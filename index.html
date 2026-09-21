@@ -4,6 +4,9 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>스네이크 게임</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
@@ -30,16 +33,36 @@
     <div class="board-wrap">
       <canvas id="game-canvas" width="400" height="400"></canvas>
 
-      <!-- 게임오버 시에만 표시되는 오버레이 -->
+      <!-- 게임오버/퀘스트 성공 시에만 표시되는 오버레이 (JS가 메시지와 색상 클래스를 갈아끼움) -->
       <div id="game-over-overlay" class="overlay hidden">
-        <p>게임 오버</p>
+        <p id="overlay-message">게임 오버</p>
         <button id="restart-btn">다시 시작</button>
       </div>
     </div>
 
-    <!-- 난이도 선택 + 시작/일시정지 버튼을 한 컨트롤 영역으로 묶음 -->
+    <!-- 난이도 선택 + 시작/일시정지 버튼을 한 컨트롤 영역으로 묶음.
+         2열 그리드로 배치해 모드/난이도, 문구/색상이 각각 세로로 줄맞춰 보이게 함 -->
     <div class="controls">
-      <div class="difficulty-select">
+      <!-- 일반: 무한 랜덤 먹이 / 퀘스트: 지정한 문구를 글자 모양의 먹이들로 표현하고 완성하면 성공 -->
+      <div class="control-group">
+        <label for="game-mode">모드:</label>
+        <select id="game-mode">
+          <option value="normal" selected>일반</option>
+          <option value="quest">퀘스트</option>
+        </select>
+      </div>
+
+      <!-- 문구는 항상 표시하되, 일반 모드에서는 비활성화(퀘스트 모드일 때만 선택 가능) -->
+      <div class="control-group">
+        <label for="quest-phrase">문구:</label>
+        <select id="quest-phrase" disabled>
+          <option value="NCT 127" selected>NCT 127</option>
+          <option value="DY LOVE">DY LOVE</option>
+          <option value="MISS YOU">MISS YOU</option>
+        </select>
+      </div>
+
+      <div class="control-group">
         <label for="difficulty">난이도:</label>
         <select id="difficulty">
           <option value="easy">쉬움</option>
@@ -50,7 +73,7 @@
       </div>
 
       <!-- 뱀 색상 선택: 게임 중에도 즉시 반영되는 순수 표시용 설정이라 비활성화하지 않음 -->
-      <div class="color-select">
+      <div class="control-group">
         <label for="snake-color">뱀 색상:</label>
         <input type="color" id="snake-color" value="#4ade80" />
       </div>
