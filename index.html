@@ -26,6 +26,7 @@
       <div class="stat">
         <span class="stat-label">최고 점수</span>
         <span class="stat-value" id="high-score">0</span>
+        <button id="reset-highscore-btn" class="reset-btn" type="button">초기화</button>
       </div>
     </div>
 
@@ -35,6 +36,8 @@
 
       <!-- 게임오버/퀘스트 성공 시에만 표시되는 오버레이 (JS가 메시지와 색상 클래스를 갈아끼움) -->
       <div id="game-over-overlay" class="overlay hidden">
+        <!-- 퀘스트 성공 시에만 보이는 아이콘 (게임 오버 때는 JS가 hidden 처리) -->
+        <img id="success-icon" class="success-icon hidden" src="success-icon.png" alt="퀘스트 성공" />
         <p id="overlay-message">게임 오버</p>
         <button id="restart-btn">다시 시작</button>
       </div>
@@ -43,13 +46,14 @@
     <!-- 난이도 선택 + 시작/일시정지 버튼을 한 컨트롤 영역으로 묶음.
          2열 그리드로 배치해 모드/난이도, 문구/색상이 각각 세로로 줄맞춰 보이게 함 -->
     <div class="controls">
-      <!-- 일반: 무한 랜덤 먹이 / 퀘스트: 지정한 문구를 글자 모양의 먹이들로 표현하고 완성하면 성공 -->
+      <!-- 일반: 무한 랜덤 먹이 / 퀘스트: 지정한 문구를 글자 모양의 먹이들로 표현하고 완성하면 성공.
+           드롭다운 대신 버튼 두 개 중 하나를 클릭해서 고르는 방식 -->
       <div class="control-group">
-        <label for="game-mode">모드:</label>
-        <select id="game-mode">
-          <option value="normal" selected>일반</option>
-          <option value="quest">퀘스트</option>
-        </select>
+        <label>모드:</label>
+        <div class="mode-toggle" id="mode-toggle">
+          <button type="button" class="mode-btn active" data-mode="normal">일반</button>
+          <button type="button" class="mode-btn" data-mode="quest">퀘스트</button>
+        </div>
       </div>
 
       <!-- 문구는 항상 표시하되, 일반 모드에서는 비활성화(퀘스트 모드일 때만 선택 가능) -->
@@ -57,7 +61,7 @@
         <label for="quest-phrase">문구:</label>
         <select id="quest-phrase" disabled>
           <option value="NCT 127" selected>NCT 127</option>
-          <option value="DY LOVE">DY LOVE</option>
+          <option value="DY♥ LOVE">DY♥ LOVE</option>
           <option value="MISS YOU">MISS YOU</option>
         </select>
       </div>

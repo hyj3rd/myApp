@@ -58,11 +58,17 @@ const FONT = {
   X: ["1001", "1001", "0110", "0110", "1001", "1001"],
   Y: ["1001", "1001", "0110", "0100", "0100", "0100"],
   Z: ["1111", "0001", "0010", "0100", "1000", "1111"],
+  // 다른 글자보다 넓은 6칸짜리 글리프: 맨 위 두 봉우리 -> 6칸 -> 4칸 -> 2칸으로 좁아지는 하트.
+  // 너비가 짝수라 정중앙 칸이 따로 없지만, 매 줄을 가운데 기준으로 대칭으로 채워서 비대칭을 피함
+  "♥": ["010010", "111111", "011110", "001100", "000000", "000000"],
 };
-const FONT_CHAR_W = 4;
+const FONT_CHAR_W = 4; // 하트를 제외한 기본 글자 너비. 하트처럼 예외적인 글자는 glyphWidth()로 실제 폭을 따로 계산함
 const FONT_CHAR_H = 6;
 const FONT_GAP_X = 1;
 const FONT_GAP_Y = 1;
+// 하트 앞에는 보통 글자 사이 간격(FONT_GAP_X)보다 더 띄워서, 하트가 바로 앞 글자에 들러붙어
+// 뭉개져 보이지 않고 독립된 장식처럼 보이게 함
+const HEART_EXTRA_GAP_X = 2;
 const QUEST_CHARS_PER_ROW = Math.floor((GRID_SIZE + FONT_GAP_X) / (FONT_CHAR_W + FONT_GAP_X)); // 20x20 격자에 4x6 폰트 기준 한 줄에 들어가는 글자 수 (=4)
 
 // 화면 요소 참조 (한 번만 조회해서 재사용)
@@ -71,15 +77,17 @@ const ctx = canvas.getContext("2d"); // 2D 그리기 컨텍스트
 const scoreEl = document.getElementById("score");
 const levelEl = document.getElementById("level");
 const highScoreEl = document.getElementById("high-score");
+const resetHighScoreBtn = document.getElementById("reset-highscore-btn");
 const difficultySelect = document.getElementById("difficulty");
 const snakeColorInput = document.getElementById("snake-color");
-const modeSelect = document.getElementById("game-mode");
+const modeButtons = document.querySelectorAll(".mode-btn"); // 일반/퀘스트 토글 버튼 두 개
 const questSelect = document.getElementById("quest-phrase");
 const startBtn = document.getElementById("start-btn");
 const restartBtn = document.getElementById("restart-btn");
 const pauseBtn = document.getElementById("pause-btn");
 const overlay = document.getElementById("game-over-overlay"); // 게임오버/퀘스트 성공 시 보여줄 오버레이
 const overlayMessage = document.getElementById("overlay-message");
+const successIcon = document.getElementById("success-icon");
 
 // 게임 상태 (좌표는 모두 격자 단위 정수: 0~19)
 let snake = []; // 뱀 몸통. snake[0]이 머리, 배열 순서대로 몸통이 이어짐
@@ -94,7 +102,8 @@ let highScore = Number(localStorage.getItem(HIGH_SCORE_KEY)) || 0; // 저장된 
 let loopId = null; // setInterval의 타이머 id (게임 루프 제어용, 없으면 null)
 
 // 퀘스트 모드 상태 (일반 모드에서는 계속 빈 값으로 유지됨)
-let gameMode = "normal"; // "normal" | "quest"
+let selectedMode = "normal"; // "normal" | "quest" - 모드 토글 버튼으로 현재 골라둔 값 (시작 전까지는 바뀔 수 있음)
+let gameMode = "normal"; // "normal" | "quest" - 이번 판 시작 시 selectedMode를 고정해둔 값
 let questCells = []; // 문구를 이루는 전체 목표 칸 (고정)
 let questRemaining = []; // 아직 먹지 않은 목표 칸 = 지금 화면에 동시에 떠 있는 먹이들
 
@@ -116,24 +125,35 @@ function buildQuestCells(text) {
     return [];
   }
 
+  // 글자 대부분은 FONT_CHAR_W(4칸)지만 하트처럼 그보다 넓은 글리프도 있어 실제 글리프 폭을 사용
+  const glyphWidth = (char) => FONT[char][0].length;
+  // 각 글자 사이 간격(하트 앞이면 더 넓게)을 더해 줄 폭을 계산
+  const gapBefore = (char) => FONT_GAP_X + (char === "♥" ? HEART_EXTRA_GAP_X : 0);
+  const rowWidths = rows.map((rowChars) =>
+    rowChars.reduce((sum, char, i) => sum + glyphWidth(char) + (i > 0 ? gapBefore(char) : 0), 0)
+  );
+
   const totalHeight = rows.length * FONT_CHAR_H + (rows.length - 1) * FONT_GAP_Y;
   const offsetY = Math.floor((GRID_SIZE - totalHeight) / 2);
 
   const cells = [];
   rows.forEach((rowChars, rowIndex) => {
-    const rowWidth = rowChars.length * FONT_CHAR_W + (rowChars.length - 1) * FONT_GAP_X;
-    const offsetX = Math.floor((GRID_SIZE - rowWidth) / 2);
+    const offsetX = Math.floor((GRID_SIZE - rowWidths[rowIndex]) / 2);
     const rowY = offsetY + rowIndex * (FONT_CHAR_H + FONT_GAP_Y);
 
+    let charX = offsetX;
     rowChars.forEach((char, charIndex) => {
-      const charX = offsetX + charIndex * (FONT_CHAR_W + FONT_GAP_X);
+      if (charIndex > 0) {
+        charX += gapBefore(char);
+      }
       FONT[char].forEach((bits, py) => {
-        for (let px = 0; px < FONT_CHAR_W; px++) {
+        for (let px = 0; px < bits.length; px++) {
           if (bits[px] === "1") {
             cells.push({ x: charX + px, y: rowY + py });
           }
         }
       });
+      charX += glyphWidth(char);
     });
   });
 
@@ -162,11 +182,44 @@ function restartLoop() {
   loopId = setInterval(tick, effectiveTickMs());
 }
 
+// 퀘스트 모드에서 뱀이 시작할 안전한 칸을 찾음: questCells와 안 겹치면서, 오른쪽으로 최소
+// SAFE_SPAWN_RUNWAY칸은 더 이동해도 글자와 안 부딪히는 자리. 화면 왼쪽 위부터 훑어서
+// 그런 조건을 만족하는 첫 칸을 찾고, 혹시 못 찾으면(글자가 화면을 거의 다 채우는 극단적 경우)
+// questCells와 안 겹치는 아무 칸이나 사용
+function findSafeQuestSpawn() {
+  const SAFE_SPAWN_RUNWAY = 4;
+  const isQuestCell = (x, y) => questCells.some((cell) => cell.x === x && cell.y === y);
+
+  for (let y = 0; y < GRID_SIZE; y++) {
+    for (let x = 0; x <= GRID_SIZE - SAFE_SPAWN_RUNWAY; x++) {
+      let hasRunway = true;
+      for (let step = 0; step < SAFE_SPAWN_RUNWAY; step++) {
+        if (isQuestCell(x + step, y)) {
+          hasRunway = false;
+          break;
+        }
+      }
+      if (hasRunway) {
+        return { x, y };
+      }
+    }
+  }
+
+  // 여기까지 왔다면 정말 극단적인 경우: 최소한 글자와 안 겹치는 칸이라도 찾음
+  for (let y = 0; y < GRID_SIZE; y++) {
+    for (let x = 0; x < GRID_SIZE; x++) {
+      if (!isQuestCell(x, y)) {
+        return { x, y };
+      }
+    }
+  }
+
+  return { x: 0, y: 0 }; // 그마저도 없으면(=글자가 격자 전체를 채움) 어쩔 수 없이 좌상단
+}
+
 // 뱀/점수/방향을 초기 상태로 되돌리고 새 먹이를 배치
 // (start/restart 버튼을 누를 때마다 호출되어 이전 게임 상태를 완전히 리셋함)
 function resetState() {
-  // 뱀은 머리 한 칸으로 시작, 가로 방향(오른쪽)을 향함
-  snake = [{ x: 8, y: 10 }];
   direction = { x: 1, y: 0 };
   nextDirection = { x: 1, y: 0 };
   score = 0;
@@ -179,7 +232,14 @@ function resetState() {
   if (gameMode === "quest") {
     questCells = buildQuestCells(questSelect.value);
     questRemaining = [...questCells];
+    // 기존엔 뱀이 항상 격자 정중앙(8,10)에서 시작했는데, 이 좌표가 글자 배치 영역(세로 중앙)과 겹쳐서
+    // "MISS YOU"처럼 글자가 빽빽한 문구는 시작하자마자 글자 한복판에서 출발해 방향을 바꿀 여유가 없었다.
+    // (실제로는 방향키가 안 먹힌 게 아니라 반응할 시간이 없었던 것) 퀘스트 모드는 글자와 안 겹치는
+    // 빈 칸에서 시작하도록 별도로 자리를 찾는다.
+    snake = [findSafeQuestSpawn()];
   } else {
+    // 뱀은 머리 한 칸으로 시작, 가로 방향(오른쪽)을 향함
+    snake = [{ x: 8, y: 10 }];
     questCells = [];
     questRemaining = [];
     placeFood(); // 일반 모드만 무작위 먹이 하나를 배치 (퀘스트 모드는 questRemaining 자체가 먹이 목록)
@@ -305,7 +365,7 @@ function tick() {
 function startGame() {
   // 난이도 select 값을 이번 판의 기준 속도로 고정 (게임 중 select를 바꿔도 이번 판엔 미반영)
   baseTickMs = DIFFICULTY_TICK_MS[difficultySelect.value] || DIFFICULTY_TICK_MS[DEFAULT_DIFFICULTY];
-  gameMode = modeSelect.value; // 모드도 이번 판 기준으로 고정
+  gameMode = selectedMode; // 모드도 이번 판 기준으로 고정
   resetState();
   overlay.classList.add("hidden"); // 게임오버/퀘스트 성공 화면 숨기기
   startBtn.classList.add("hidden"); // 시작 버튼은 한 번만 보이도록 숨기기
@@ -314,7 +374,9 @@ function startGame() {
   pauseBtn.textContent = "일시정지";
   // 게임 중엔 바꿔도 반영되지 않으므로 모드/문구/난이도를 비활성화
   difficultySelect.disabled = true;
-  modeSelect.disabled = true;
+  modeButtons.forEach((btn) => {
+    btn.disabled = true;
+  });
   questSelect.disabled = true;
 
   draw();
@@ -337,8 +399,10 @@ function stopGame() {
   pauseBtn.classList.add("hidden");
   // 다음 판 시작 전에 모드/난이도를 다시 고를 수 있게 함. 문구는 퀘스트 모드일 때만 활성화
   difficultySelect.disabled = false;
-  modeSelect.disabled = false;
-  questSelect.disabled = modeSelect.value !== "quest";
+  modeButtons.forEach((btn) => {
+    btn.disabled = false;
+  });
+  questSelect.disabled = selectedMode !== "quest";
 }
 
 // 충돌 발생 시 루프를 멈추고 "게임 오버" 오버레이 표시
@@ -346,6 +410,7 @@ function endGame() {
   stopGame();
   overlayMessage.textContent = "게임 오버";
   overlay.classList.remove("overlay-success");
+  successIcon.classList.add("hidden");
   overlay.classList.remove("hidden");
 }
 
@@ -354,6 +419,7 @@ function finishQuest() {
   stopGame();
   overlayMessage.textContent = "퀘스트 성공! 🎉";
   overlay.classList.add("overlay-success");
+  successIcon.classList.remove("hidden");
   overlay.classList.remove("hidden");
 }
 
@@ -406,7 +472,23 @@ snakeColorInput.addEventListener("input", () => {
   }
 });
 
-// 문구 드롭다운은 항상 표시하되, 퀘스트 모드일 때만 실제로 선택할 수 있게 활성화
-modeSelect.addEventListener("change", () => {
-  questSelect.disabled = modeSelect.value !== "quest";
+// 모드 토글 버튼: 클릭한 쪽을 선택 상태로 표시하고, 문구 드롭다운은 퀘스트를 골랐을 때만 활성화
+modeButtons.forEach((btn) => {
+  btn.addEventListener("click", () => {
+    selectedMode = btn.dataset.mode;
+    modeButtons.forEach((b) => {
+      b.classList.toggle("active", b === btn);
+    });
+    questSelect.disabled = selectedMode !== "quest";
+  });
+});
+
+// 최고 점수 초기화: localStorage에 영구 저장된 값이라 실수로 지우는 걸 막기 위해 확인창을 거침
+resetHighScoreBtn.addEventListener("click", () => {
+  if (!window.confirm("최고 점수를 초기화할까요?")) {
+    return;
+  }
+  highScore = 0;
+  localStorage.removeItem(HIGH_SCORE_KEY);
+  highScoreEl.textContent = highScore;
 });

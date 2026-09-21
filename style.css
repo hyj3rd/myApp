@@ -2,9 +2,15 @@
   box-sizing: border-box;
 }
 
+/* 페이지 자체가 스크롤되지 않도록 고정 (마우스 휠/트랙패드로도 위아래로 안 움직임) */
+html,
+body {
+  height: 100%;
+  overflow: hidden;
+}
+
 body {
   margin: 0;
-  min-height: 100vh;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -79,6 +85,25 @@ h1 {
   text-shadow: 1px 1px 0 #000;
 }
 
+/* 최고 점수 타일 안의 작은 초기화 버튼. 자주 쓰는 버튼이 아니라 눈에 덜 띄게 절제된 스타일로 둠 */
+.reset-btn {
+  padding: 3px 6px;
+  border: 1px solid #00e5ff;
+  background: transparent;
+  color: #00e5ff;
+  font-size: 7px;
+  box-shadow: none;
+}
+
+.reset-btn:hover {
+  background: #00e5ff;
+  color: #000;
+}
+
+.reset-btn:active {
+  box-shadow: none;
+}
+
 /* 캔버스와 게임오버 오버레이를 겹치기 위한 컨테이너 */
 .board-wrap {
   position: relative;
@@ -114,6 +139,14 @@ h1 {
   margin: 0;
   font-size: 16px;
   text-shadow: 2px 2px 0 #000;
+}
+
+/* 퀘스트 성공 시 문구 위에 뜨는 아이콘 이미지 */
+.success-icon {
+  width: 260px;
+  max-width: 80%;
+  height: auto;
+  filter: drop-shadow(3px 3px 0 #000);
 }
 
 /* 퀘스트 성공 시 게임오버 오버레이 위에 덧붙는 네온 그린 색상 */
@@ -178,6 +211,48 @@ h1 {
   border-radius: 0;
   background: #000000;
   cursor: pointer;
+}
+
+/* 일반/퀘스트를 드롭다운 대신 버튼 두 개로 고르는 토글. 테두리를 맞붙여 한 덩어리로 보이게 함 */
+.mode-toggle {
+  display: flex;
+  flex: 1;
+  max-width: 130px;
+}
+
+.mode-toggle .mode-btn {
+  flex: 1;
+  padding: 6px 2px;
+  border: 2px solid #00e5ff;
+  background: #000000;
+  color: #e6e6e6;
+  font-family: "Courier New", monospace;
+  font-size: 13px;
+  box-shadow: none;
+}
+
+/* 버튼 두 개가 붙어 보이도록 가운데 경계선은 하나만 남김 */
+.mode-toggle .mode-btn + .mode-btn {
+  border-left: none;
+}
+
+.mode-toggle .mode-btn:hover {
+  background: rgba(0, 229, 255, 0.2);
+}
+
+/* 현재 선택된 모드는 채워진 배경으로 강조 */
+.mode-toggle .mode-btn.active {
+  background: #00e5ff;
+  color: #000000;
+}
+
+.mode-toggle .mode-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.mode-toggle .mode-btn:active:not(:disabled) {
+  box-shadow: none;
 }
 
 /* 시작/일시정지 버튼을 가로로 나란히 배치.
