@@ -14,6 +14,7 @@ body {
 
 /* 화면 중앙에 표시되는 게임 카드 */
 .card {
+  width: 456px;
   background: #ffffff;
   border-radius: 12px;
   padding: 24px 28px 28px;
@@ -132,10 +133,33 @@ h1 {
   cursor: not-allowed;
 }
 
-/* 시작/일시정지 버튼을 가로로 나란히 배치 */
+/* 뱀 색상 선택 영역: 난이도 선택과 같은 가로 배치 스타일 재사용 */
+.color-select {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-size: 14px;
+  color: #4b5563;
+}
+
+.color-select input[type="color"] {
+  width: 36px;
+  height: 28px;
+  padding: 2px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  background: #fff;
+  cursor: pointer;
+}
+
+/* 시작/일시정지 버튼을 가로로 나란히 배치.
+   게임오버 시 두 버튼이 모두 hidden 처리돼도 줄 높이가 0으로 줄어들어
+   카드가 수직으로 들썩이지 않도록 버튼 높이만큼 최소 높이를 확보한다. */
 .button-row {
   display: flex;
   gap: 10px;
+  min-height: 40px;
 }
 
 button {

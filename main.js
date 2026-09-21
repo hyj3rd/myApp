@@ -19,6 +19,7 @@ const scoreEl = document.getElementById("score");
 const levelEl = document.getElementById("level");
 const highScoreEl = document.getElementById("high-score");
 const difficultySelect = document.getElementById("difficulty");
+const snakeColorInput = document.getElementById("snake-color");
 const startBtn = document.getElementById("start-btn");
 const restartBtn = document.getElementById("restart-btn");
 const pauseBtn = document.getElementById("pause-btn");
@@ -96,8 +97,8 @@ function draw() {
   ctx.fillStyle = "#ef4444";
   ctx.fillRect(food.x * CELL_SIZE, food.y * CELL_SIZE, CELL_SIZE, CELL_SIZE);
 
-  // 뱀은 초록 사각형들. -1px 여백을 줘서 칸 사이에 격자선처럼 틈이 보이게 함
-  ctx.fillStyle = "#4ade80";
+  // 뱀 색상은 사용자가 선택한 값을 사용. -1px 여백을 줘서 칸 사이에 격자선처럼 틈이 보이게 함
+  ctx.fillStyle = snakeColorInput.value;
   snake.forEach((segment) => {
     ctx.fillRect(segment.x * CELL_SIZE, segment.y * CELL_SIZE, CELL_SIZE - 1, CELL_SIZE - 1);
   });
@@ -226,3 +227,11 @@ window.addEventListener("keydown", (event) => {
 startBtn.addEventListener("click", startGame);
 restartBtn.addEventListener("click", startGame);
 pauseBtn.addEventListener("click", togglePause);
+
+// 색상 선택은 게임 로직과 무관한 표시 설정이라 즉시 다시 그려서 반영
+// (일시정지 중이거나 게임오버 상태라 tick()이 돌지 않을 때도 눈에 보이게 하기 위함)
+snakeColorInput.addEventListener("input", () => {
+  if (snake.length > 0) {
+    draw();
+  }
+});
