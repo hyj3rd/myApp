@@ -11,7 +11,11 @@
 </head>
 <body>
   <div class="card">
-    <h1>스네이크 게임</h1>
+    <div class="title-row">
+      <h1>스네이크 게임</h1>
+      <!-- 처음 보는 사람도 규칙을 알 수 있도록 언제든 다시 열어볼 수 있는 도움말 버튼 -->
+      <button id="help-btn" class="help-btn" type="button" aria-label="게임 방법 보기">?</button>
+    </div>
 
     <!-- 점수 / 레벨 / 최고 점수 표시: 동일한 모양의 타일 3개 -->
     <div class="stats">
@@ -105,6 +109,22 @@
         <!-- 게임 진행 중에만 표시되는 일시정지 버튼 -->
         <button id="pause-btn" class="hidden">일시정지</button>
       </div>
+    </div>
+  </div>
+
+  <!-- 게임 방법 도움말. .card 밖(body 최상위)에 둬서 카드의 max-height/overflow:hidden 제약과
+       무관하게 화면 전체 기준으로 뜨도록 함. 처음 방문 시 자동으로 한 번 열리고, ? 버튼으로 언제든 다시 볼 수 있음 -->
+  <div id="help-modal" class="help-modal hidden">
+    <div class="help-modal-box">
+      <h2>게임 방법</h2>
+      <ul>
+        <li>방향키(↑↓←→) 또는 화면 아래 방향 버튼으로 뱀을 조작해요.</li>
+        <li>먹이를 먹으면 점수가 오르고, 벽이나 자기 몸에 부딪히면 게임이 끝나요.</li>
+        <li><strong>일반</strong> 모드: 먹이가 계속 무작위로 나와요. 오래 살아남을수록 고득점!</li>
+        <li><strong>퀘스트</strong> 모드: 고른 문구 모양대로 나온 먹이를 전부 먹으면 성공이에요.</li>
+        <li>난이도와 뱀 색상은 시작 전에 원하는 대로 바꿀 수 있어요.</li>
+      </ul>
+      <button id="help-close-btn" type="button">확인</button>
     </div>
   </div>
 

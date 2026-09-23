@@ -90,6 +90,10 @@ const overlayMessage = document.getElementById("overlay-message");
 const successIcon = document.getElementById("success-icon");
 const trophyBurst = document.getElementById("trophy-burst");
 const confettiContainer = document.getElementById("confetti-container");
+const helpBtn = document.getElementById("help-btn");
+const helpModal = document.getElementById("help-modal");
+const helpCloseBtn = document.getElementById("help-close-btn");
+const HELP_SEEN_KEY = "snake-help-seen"; // 처음 방문한 사용자에게만 도움말을 자동으로 띄우기 위한 localStorage 키
 const CONFETTI_COLORS = ["#39ff14", "#ff2e63", "#00e5ff", "#ffd23f"];
 
 // 게임 상태 (좌표는 모두 격자 단위 정수: 0~19)
@@ -569,3 +573,25 @@ resetHighScoreBtn.addEventListener("click", () => {
   localStorage.removeItem(HIGH_SCORE_KEY);
   highScoreEl.textContent = highScore;
 });
+
+// 게임 방법 도움말: ? 버튼으로 언제든 열 수 있고, 닫으면 다시 안 뜨도록 본 적 있음을 저장해둠
+function closeHelp() {
+  helpModal.classList.add("hidden");
+  localStorage.setItem(HELP_SEEN_KEY, "1");
+}
+
+helpBtn.addEventListener("click", () => {
+  helpModal.classList.remove("hidden");
+});
+helpCloseBtn.addEventListener("click", closeHelp);
+// 배경(반투명 어두운 부분)을 클릭해도 닫히게 함 (안내 박스 자체를 클릭한 경우는 제외)
+helpModal.addEventListener("click", (event) => {
+  if (event.target === helpModal) {
+    closeHelp();
+  }
+});
+
+// 처음 방문한 사용자에게는 게임 방법을 자동으로 한 번 보여줌
+if (!localStorage.getItem(HELP_SEEN_KEY)) {
+  helpModal.classList.remove("hidden");
+}

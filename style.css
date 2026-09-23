@@ -55,12 +55,97 @@ button,
   text-align: center;
 }
 
+/* 제목 + 도움말(?) 버튼을 한 줄에: 제목은 가운데, 버튼은 오른쪽 끝에 붙임 */
+.title-row {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 10px;
+}
+
 h1 {
-  margin: 0 0 10px;
+  margin: 0;
   font-size: 14px;
   color: #39ff14;
   text-shadow: 2px 2px 0 #000;
   letter-spacing: 1px;
+}
+
+.help-btn {
+  position: absolute;
+  right: 0;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: 2px solid #39ff14;
+  background: #000000;
+  color: #39ff14;
+  font-size: 12px;
+  box-shadow: none;
+}
+
+.help-btn:hover {
+  background: rgba(57, 255, 20, 0.2);
+}
+
+.help-btn:active {
+  box-shadow: none;
+}
+
+/* 게임 방법 도움말. 화면 전체를 덮는 반투명 배경 + 가운데 정렬된 텍스트 박스 */
+.help-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  background: rgba(0, 0, 0, 0.75);
+}
+
+.help-modal-box {
+  width: 100%;
+  max-width: 340px;
+  max-height: 100%;
+  overflow-y: auto;
+  background: #1a1a2e;
+  border: 4px solid #39ff14;
+  border-radius: 0;
+  padding: 18px;
+  box-shadow: 8px 8px 0 #000000;
+  text-align: left;
+  color: #e6e6e6;
+  font-family: "Courier New", monospace;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.help-modal-box h2 {
+  margin: 0 0 12px;
+  font-family: "Press Start 2P", "Courier New", monospace;
+  font-size: 13px;
+  color: #39ff14;
+  text-shadow: 2px 2px 0 #000;
+  text-align: center;
+}
+
+.help-modal-box ul {
+  margin: 0 0 16px;
+  padding-left: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.help-modal-box strong {
+  color: #ffd23f;
+}
+
+.help-modal-box button {
+  display: block;
+  margin: 0 auto;
 }
 
 /* 점수/레벨/최고 점수 표시 영역: 같은 모양의 타일 3개를 나란히 배치 */
