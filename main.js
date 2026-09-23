@@ -552,6 +552,18 @@ const DPAD_DIRECTION = {
   right: { x: 1, y: 0 },
 };
 document.querySelectorAll(".dpad-btn").forEach((btn) => {
+  // 터치 기기에서 click은 손가락을 뗄 때(touchend) 브라우저가 뒤늦게 합성해서 보내는
+  // 이벤트라 keydown보다 원래 느림. touchstart(손가락이 닿는 즉시 발생)로 먼저 반응하게 하고,
+  // preventDefault로 뒤이어 합성되는 click이 같은 방향을 중복 처리하지 않게 막음.
+  // click은 마우스로 클릭하는 데스크톱 사용자를 위해 그대로 둠
+  btn.addEventListener(
+    "touchstart",
+    (event) => {
+      event.preventDefault();
+      changeDirection(DPAD_DIRECTION[btn.dataset.dir]);
+    },
+    { passive: false }
+  );
   btn.addEventListener("click", () => {
     changeDirection(DPAD_DIRECTION[btn.dataset.dir]);
   });
