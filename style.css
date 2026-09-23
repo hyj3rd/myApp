@@ -2,23 +2,19 @@
   box-sizing: border-box;
 }
 
-/* 가로 스크롤은 항상 막고(콘텐츠가 옆으로 삐져나갈 일은 없어야 함),
-   세로는 내용이 화면보다 커질 수 있으니 필요할 때만 스크롤되게 열어둠 */
+/* 화면 높이를 넘어가지 않도록 모든 걸 뷰포트 안에 맞춰서, 스크롤이 아예 생기지 않게 고정 */
 html,
 body {
-  overflow-x: hidden;
+  height: 100%;
+  overflow: hidden;
 }
 
 body {
   margin: 0;
-  /* height(고정)가 아니라 min-height(최소값)를 써야, 카드+D-pad+컨트롤 전체 높이가
-     화면보다 커졌을 때 body 자체가 같이 늘어나서 위쪽이 화면 밖(음수 위치)으로 밀려나
-     스크롤해도 닿을 수 없이 잘리는 문제가 생기지 않음 */
-  min-height: 100vh;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 16px;
+  padding: 8px;
   /* 어두운 배경 위에 옅은 스캔라인을 깔아 CRT 화면 느낌을 냄 */
   background: repeating-linear-gradient(
       0deg,
@@ -47,17 +43,21 @@ button,
 .card {
   width: 100%;
   max-width: 456px;
+  /* 뷰포트 높이를 넘지 못하게 상한을 걸고, 혹시 계산이 아주 빠듯한 화면에서 살짝 넘치더라도
+     페이지 스크롤바 대신 카드 안쪽에서만 잘리도록 안전장치를 둠 */
+  max-height: 100%;
+  overflow: hidden;
   background: #1a1a2e;
   border: 4px solid #39ff14;
   border-radius: 0;
-  padding: 24px 20px 28px;
+  padding: 16px 16px 18px;
   box-shadow: 8px 8px 0 #000000;
   text-align: center;
 }
 
 h1 {
-  margin: 0 0 20px;
-  font-size: 16px;
+  margin: 0 0 10px;
+  font-size: 14px;
   color: #39ff14;
   text-shadow: 2px 2px 0 #000;
   letter-spacing: 1px;
@@ -68,17 +68,17 @@ h1 {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 8px;
-  margin-bottom: 20px;
+  margin-bottom: 10px;
 }
 
 .stat {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 4px;
   background: #000000;
   border: 2px solid #00e5ff;
   border-radius: 0;
-  padding: 10px 4px;
+  padding: 6px 4px;
 }
 
 .stat-label {
@@ -114,12 +114,13 @@ h1 {
 }
 
 /* 캔버스와 게임오버 오버레이를 겹치기 위한 컨테이너.
-   고정 400px 대신 max-width + aspect-ratio로 화면 폭에 맞춰 정사각형을 유지한 채 줄어들게 함
-   (캔버스 자체의 격자 해상도는 그대로 400x400이라 그리기 로직은 안 건드려도 됨) */
+   고정 400px 대신 max-width + aspect-ratio로 화면에 맞춰 정사각형을 유지한 채 줄어들게 함
+   (캔버스 자체의 격자 해상도는 그대로 400x400이라 그리기 로직은 안 건드려도 됨).
+   폭(vw)뿐 아니라 높이(vh) 기준으로도 상한을 둬야, 화면이 좁지는 않지만 짧은(가로로 긴)
+   모바일 화면에서 보드가 그대로 400px로 그려져 아래 컨트롤들과 함께 화면 밖으로 넘치는 걸 막음 */
 .board-wrap {
   position: relative;
-  width: 100%;
-  max-width: 400px;
+  width: min(100%, 400px, 40vh);
   aspect-ratio: 1 / 1;
   margin: 0 auto;
 }
@@ -268,11 +269,11 @@ h1 {
 /* 모바일 터치 조작용 방향 버튼 (십자 배열). 키보드가 없는 화면에서도 뱀을 조작할 수 있게 함 */
 .dpad {
   display: grid;
-  grid-template-columns: repeat(3, 52px);
-  grid-template-rows: repeat(2, 52px);
-  gap: 6px;
+  grid-template-columns: repeat(3, 44px);
+  grid-template-rows: repeat(2, 44px);
+  gap: 4px;
   justify-content: center;
-  margin-top: 20px;
+  margin-top: 10px;
 }
 
 .dpad-btn {
@@ -309,9 +310,9 @@ h1 {
   display: grid;
   grid-template-columns: 1fr 1fr;
   column-gap: 24px;
-  row-gap: 12px;
+  row-gap: 8px;
   justify-items: center;
-  margin-top: 20px;
+  margin-top: 10px;
 }
 
 /* 라벨 하나 + 컨트롤 하나로 이루어진 그룹. 라벨 너비를 고정해 같은 열의 select들이 서로 줄맞음 */
@@ -406,12 +407,12 @@ h1 {
   grid-column: 1 / -1;
   display: flex;
   gap: 12px;
-  min-height: 40px;
+  min-height: 34px;
 }
 
 /* NES 게임기 버튼처럼 입체감 있는 픽셀 버튼: 왼쪽/위는 밝게, 오른쪽/아래는 어둡게 해서 튀어나와 보이게 함 */
 button {
-  padding: 10px 16px;
+  padding: 8px 14px;
   border: none;
   border-radius: 0;
   background: #ff2e63;
