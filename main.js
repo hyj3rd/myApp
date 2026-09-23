@@ -71,6 +71,22 @@ const FONT_GAP_Y = 1;
 const HEART_EXTRA_GAP_X = 2;
 const QUEST_CHARS_PER_ROW = Math.floor((GRID_SIZE + FONT_GAP_X) / (FONT_CHAR_W + FONT_GAP_X)); // 20x20 격자에 4x6 폰트 기준 한 줄에 들어가는 글자 수 (=4)
 
+const cardEl = document.querySelector(".card");
+
+// 카드 전체 높이가 뷰포트보다 커지면(모바일 등) 잘라내는 대신 비율대로 통째로 줄여서
+// 항상 카드 전체(버튼 포함)가 온전히 보이고 겹치는 부분이 없게 함
+function fitCardToViewport() {
+  cardEl.style.transform = ""; // 실제 크기를 다시 재려면 먼저 이전 축소를 초기화해야 함
+  const availableHeight = window.innerHeight - 16; // 위아래 최소 여백
+  const neededHeight = cardEl.scrollHeight;
+  if (neededHeight > availableHeight) {
+    const scale = availableHeight / neededHeight;
+    cardEl.style.transform = `scale(${scale})`;
+  }
+}
+window.addEventListener("resize", fitCardToViewport);
+window.addEventListener("orientationchange", fitCardToViewport);
+
 // 화면 요소 참조 (한 번만 조회해서 재사용)
 const canvas = document.getElementById("game-canvas");
 const ctx = canvas.getContext("2d"); // 2D 그리기 컨텍스트
@@ -595,3 +611,8 @@ helpModal.addEventListener("click", (event) => {
 if (!localStorage.getItem(HELP_SEEN_KEY)) {
   helpModal.classList.remove("hidden");
 }
+
+// 초기 크기에 맞춰 한 번 실행하고, 구글 폰트가 늦게 로드돼 레이아웃이 살짝 바뀔 때를 대비해
+// 페이지 로드가 완전히 끝난 뒤에도 한 번 더 재계산함
+fitCardToViewport();
+window.addEventListener("load", fitCardToViewport);
