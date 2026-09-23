@@ -2,11 +2,13 @@
   box-sizing: border-box;
 }
 
-/* 페이지 자체가 스크롤되지 않도록 고정 (마우스 휠/트랙패드로도 위아래로 안 움직임) */
+/* 페이지 자체가 옆으로는 절대 안 움직이게 고정 (마우스 휠/방향키로 위아래도 기본적으로는 안 움직임).
+   세로만, 화면이 작은 모바일에서 카드가 뷰포트보다 커질 때를 대비한 안전장치로 스크롤을 열어둠 */
 html,
 body {
   height: 100%;
-  overflow: hidden;
+  overflow-x: hidden;
+  overflow-y: auto;
 }
 
 body {
@@ -14,6 +16,7 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
+  padding: 16px 0;
   /* 어두운 배경 위에 옅은 스캔라인을 깔아 CRT 화면 느낌을 냄 */
   background: repeating-linear-gradient(
       0deg,
@@ -35,13 +38,16 @@ button,
   font-family: "Press Start 2P", "Courier New", monospace;
 }
 
-/* 화면 중앙에 표시되는 게임 카드. 모서리를 각지게 하고 두꺼운 네온 테두리 + 그림자로 8비트 느낌 */
+/* 화면 중앙에 표시되는 게임 카드. 모서리를 각지게 하고 두꺼운 네온 테두리 + 그림자로 8비트 느낌.
+   width는 고정값 대신 max-width로 둬서 화면이 좁은 모바일에서는 카드 자체가 줄어들게 함 */
 .card {
-  width: 456px;
+  width: 100%;
+  max-width: 456px;
+  margin: 0 16px;
   background: #1a1a2e;
   border: 4px solid #39ff14;
   border-radius: 0;
-  padding: 24px 28px 28px;
+  padding: 24px 20px 28px;
   box-shadow: 8px 8px 0 #000000;
   text-align: center;
 }
@@ -104,17 +110,21 @@ h1 {
   box-shadow: none;
 }
 
-/* 캔버스와 게임오버 오버레이를 겹치기 위한 컨테이너 */
+/* 캔버스와 게임오버 오버레이를 겹치기 위한 컨테이너.
+   고정 400px 대신 max-width + aspect-ratio로 화면 폭에 맞춰 정사각형을 유지한 채 줄어들게 함
+   (캔버스 자체의 격자 해상도는 그대로 400x400이라 그리기 로직은 안 건드려도 됨) */
 .board-wrap {
   position: relative;
-  width: 400px;
-  height: 400px;
+  width: 100%;
+  max-width: 400px;
+  aspect-ratio: 1 / 1;
+  margin: 0 auto;
 }
 
 #game-canvas {
   display: block;
-  width: 400px;
-  height: 400px;
+  width: 100%;
+  height: 100%;
   border: 4px solid #39ff14;
   border-radius: 0;
   background: #000000;
@@ -141,13 +151,76 @@ h1 {
   text-shadow: 2px 2px 0 #000;
 }
 
-/* 퀘스트 성공 시 문구 위에 뜨는 아이콘 이미지 */
+/* 트로피 + 뒤에서 터지는 섬광을 같은 자리에 겹쳐 놓기 위한 컨테이너 */
+.trophy-wrap {
+  position: relative;
+  display: inline-block;
+}
+
+/* 퀘스트 성공 시 문구 위에 뜨는 트로피 아이콘 (기존 48px의 2배) */
 .success-icon {
-  width: 260px;
-  max-width: 80%;
-  height: auto;
+  position: relative;
+  font-size: 96px;
+  line-height: 1;
   filter: drop-shadow(3px 3px 0 #000);
-  z-index: 1; /* 폭죽 조각들보다 위에 그려지게 */
+  z-index: 1; /* 폭죽 조각/섬광보다 위에 그려지게 */
+}
+
+/* 트로피가 나타날 때 팡파레 터지듯 통통 튀며 확대되는 연출.
+   JS가 매번 클래스를 뺐다가 다시 붙여서(강제 리플로우) 재도전할 때도 애니메이션이 다시 재생되게 함 */
+.success-icon.pop-play {
+  animation: trophy-pop 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+@keyframes trophy-pop {
+  0% {
+    transform: scale(0) rotate(-20deg);
+    opacity: 0;
+  }
+  60% {
+    transform: scale(1.3) rotate(10deg);
+    opacity: 1;
+  }
+  80% {
+    transform: scale(0.9) rotate(-5deg);
+  }
+  100% {
+    transform: scale(1) rotate(0deg);
+  }
+}
+
+/* 트로피 뒤에서 확 퍼졌다 사라지는 팡파레 섬광 (원형 빛 번짐) */
+.trophy-burst {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 220px;
+  height: 220px;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle,
+    rgba(255, 255, 255, 0.9) 0%,
+    rgba(255, 210, 63, 0.6) 35%,
+    rgba(255, 210, 63, 0) 70%
+  );
+  transform: translate(-50%, -50%) scale(0);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.trophy-burst.burst-play {
+  animation: trophy-burst-flash 0.6s ease-out forwards;
+}
+
+@keyframes trophy-burst-flash {
+  0% {
+    transform: translate(-50%, -50%) scale(0);
+    opacity: 1;
+  }
+  100% {
+    transform: translate(-50%, -50%) scale(1);
+    opacity: 0;
+  }
 }
 
 /* 이미지 중앙에서 사방으로 터지는 폭죽 조각들이 채워질 자리 (오버레이 전체를 덮되 클릭은 통과시킴) */
@@ -187,6 +260,44 @@ h1 {
 
 .hidden {
   display: none;
+}
+
+/* 모바일 터치 조작용 방향 버튼 (십자 배열). 키보드가 없는 화면에서도 뱀을 조작할 수 있게 함 */
+.dpad {
+  display: grid;
+  grid-template-columns: repeat(3, 52px);
+  grid-template-rows: repeat(2, 52px);
+  gap: 6px;
+  justify-content: center;
+  margin-top: 20px;
+}
+
+.dpad-btn {
+  padding: 0;
+  font-size: 16px;
+  /* 두 번 눌러도 확대/스크롤 같은 브라우저 기본 동작이 끼어들지 않도록, 탭 하이라이트도 없앰 */
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.dpad-up {
+  grid-column: 2;
+  grid-row: 1;
+}
+
+.dpad-left {
+  grid-column: 1;
+  grid-row: 2;
+}
+
+.dpad-right {
+  grid-column: 3;
+  grid-row: 2;
+}
+
+.dpad-down {
+  grid-column: 2;
+  grid-row: 2;
 }
 
 /* 컨트롤 영역: 2열 그리드로 배치해 모드/난이도가 왼쪽 열, 문구/색상이 오른쪽 열에 세로로 줄맞춰 보이게 함.

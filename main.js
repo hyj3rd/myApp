@@ -88,6 +88,7 @@ const pauseBtn = document.getElementById("pause-btn");
 const overlay = document.getElementById("game-over-overlay"); // 게임오버/퀘스트 성공 시 보여줄 오버레이
 const overlayMessage = document.getElementById("overlay-message");
 const successIcon = document.getElementById("success-icon");
+const trophyBurst = document.getElementById("trophy-burst");
 const confettiContainer = document.getElementById("confetti-container");
 const CONFETTI_COLORS = ["#39ff14", "#ff2e63", "#00e5ff", "#ffd23f"];
 
@@ -102,6 +103,7 @@ let isPaused = false; // 일시정지 여부
 let baseTickMs = DIFFICULTY_TICK_MS[DEFAULT_DIFFICULTY]; // 이번 판 시작 시 고정되는 난이도 기준 간격
 let highScore = Number(localStorage.getItem(HIGH_SCORE_KEY)) || 0; // 저장된 값이 없으면 0
 let loopId = null; // setInterval의 타이머 id (게임 루프 제어용, 없으면 null)
+let confettiIntervalId = null; // 퀘스트 성공 화면에서 폭죽을 반복 발사하는 setInterval id ("다시 시작" 누르기 전까지 계속 터짐)
 
 // 퀘스트 모드 상태 (일반 모드에서는 계속 빈 값으로 유지됨)
 let selectedMode = "normal"; // "normal" | "quest" - 모드 토글 버튼으로 현재 골라둔 값 (시작 전까지는 바뀔 수 있음)
@@ -371,6 +373,7 @@ function startGame() {
   resetState();
   overlay.classList.add("hidden"); // 게임오버/퀘스트 성공 화면 숨기기
   startBtn.classList.add("hidden"); // 시작 버튼은 한 번만 보이도록 숨기기
+  stopConfettiParty(); // 직전 판이 퀘스트 성공이었다면 계속 터지던 폭죽을 여기서 멈춤
 
   pauseBtn.classList.remove("hidden");
   pauseBtn.textContent = "일시정지";
@@ -413,7 +416,10 @@ function endGame() {
   overlayMessage.textContent = "게임 오버";
   overlay.classList.remove("overlay-success");
   successIcon.classList.add("hidden");
-  confettiContainer.innerHTML = ""; // 직전 판이 퀘스트 성공으로 끝났을 경우를 대비해 남은 폭죽 조각 정리
+  successIcon.classList.remove("pop-play");
+  trophyBurst.classList.add("hidden");
+  trophyBurst.classList.remove("burst-play");
+  stopConfettiParty(); // 직전 판이 퀘스트 성공으로 끝났을 경우를 대비해 반복 발사/남은 조각 정리
   overlay.classList.remove("hidden");
 }
 
@@ -423,17 +429,38 @@ function finishQuest() {
   overlayMessage.textContent = "퀘스트 성공! 🎉";
   overlay.classList.add("overlay-success");
   successIcon.classList.remove("hidden");
+  trophyBurst.classList.remove("hidden");
   overlay.classList.remove("hidden");
+  playTrophyFanfare();
+  // "다시 시작"을 누르기 전까지 폭죽이 계속 터지도록 반복 발사 (startGame()에서 멈춤)
   launchConfetti();
+  confettiIntervalId = setInterval(launchConfetti, 900);
 }
 
-// 이미지 중앙에서 사방으로 터지는 폭죽 애니메이션. 조각마다 무작위 각도/거리/색/회전을 주고
-// 애니메이션이 끝나는 시점에 맞춰 스스로 DOM에서 제거해 계속 쌓이지 않게 함
-function launchConfetti() {
-  confettiContainer.innerHTML = ""; // 혹시 이전 조각이 덜 지워졌으면 먼저 비움
+// 반복 발사 중이던 폭죽을 멈추고 화면에 남은 조각을 정리함
+function stopConfettiParty() {
+  if (confettiIntervalId) {
+    clearInterval(confettiIntervalId);
+    confettiIntervalId = null;
+  }
+  confettiContainer.innerHTML = "";
+}
 
+// 트로피 팝업 + 섬광 애니메이션을 (재)트리거함. 이전 판에서 이미 재생된 애니메이션 클래스가 남아있으면
+// 다시 붙여도 재생되지 않으므로, 클래스를 뺀 뒤 강제로 리플로우(offsetWidth 읽기)시켜서 매번 처음부터 재생되게 함
+function playTrophyFanfare() {
+  successIcon.classList.remove("pop-play");
+  trophyBurst.classList.remove("burst-play");
+  void successIcon.offsetWidth;
+  successIcon.classList.add("pop-play");
+  trophyBurst.classList.add("burst-play");
+}
+
+// 이미지 중앙에서 사방으로 터지는 폭죽 애니메이션 한 번. 조각마다 무작위 각도/거리/색/회전을 주고,
+// 애니메이션이 끝나면 그 조각 하나만 스스로 DOM에서 빠져서(자기 자신만 정리) 계속 쌓이지 않게 함.
+// finishQuest()에서 이 함수를 주기적으로 호출해 "다시 시작" 누르기 전까지 계속 터지는 것처럼 보이게 함
+function launchConfetti() {
   const PIECE_COUNT = 40;
-  const ANIMATION_MS = 1100;
 
   for (let i = 0; i < PIECE_COUNT; i++) {
     const piece = document.createElement("div");
@@ -450,13 +477,10 @@ function launchConfetti() {
     piece.style.setProperty("--rot", `${rotation}deg`);
     piece.style.background = CONFETTI_COLORS[Math.floor(Math.random() * CONFETTI_COLORS.length)];
     piece.style.animationDelay = `${Math.random() * 150}ms`;
+    piece.addEventListener("animationend", () => piece.remove());
 
     confettiContainer.appendChild(piece);
   }
-
-  setTimeout(() => {
-    confettiContainer.innerHTML = "";
-  }, ANIMATION_MS + 200);
 }
 
 // 일시정지/재개 토글. setInterval 자체는 건드리지 않고 tick()의 isPaused 플래그만
@@ -469,17 +493,27 @@ function togglePause() {
   pauseBtn.textContent = isPaused ? "계속하기" : "일시정지";
 }
 
-// 방향키 입력을 다음 방향으로 반영 (역방향 즉시 전환은 무시해 자기 몸과의 즉사를 방지)
-// 예: 오른쪽으로 가고 있을 때 왼쪽 키를 눌러도 무시됨 (머리가 바로 다음 몸통 칸으로 들어가 즉사하는 것을 막음)
-window.addEventListener("keydown", (event) => {
-  const keyToDirection = {
-    ArrowUp: { x: 0, y: -1 },
-    ArrowDown: { x: 0, y: 1 },
-    ArrowLeft: { x: -1, y: 0 },
-    ArrowRight: { x: 1, y: 0 },
-  };
+// 방향 전환 요청을 다음 방향으로 반영 (역방향 즉시 전환은 무시해 자기 몸과의 즉사를 방지).
+// 키보드 방향키와 모바일 D-pad 버튼이 공통으로 사용
+// 예: 오른쪽으로 가고 있을 때 왼쪽을 요청해도 무시됨 (머리가 바로 다음 몸통 칸으로 들어가 즉사하는 것을 막음)
+function changeDirection(requested) {
+  // 현재 진행 방향의 정반대인지 확인 (x, y 부호가 둘 다 반대)
+  const isOpposite = requested.x === -direction.x && requested.y === -direction.y;
+  if (!isOpposite) {
+    // 다음 tick에서 반영될 방향만 갱신 (direction은 tick()에서 확정됨)
+    nextDirection = requested;
+  }
+}
 
-  const requested = keyToDirection[event.key];
+const KEY_TO_DIRECTION = {
+  ArrowUp: { x: 0, y: -1 },
+  ArrowDown: { x: 0, y: 1 },
+  ArrowLeft: { x: -1, y: 0 },
+  ArrowRight: { x: 1, y: 0 },
+};
+
+window.addEventListener("keydown", (event) => {
+  const requested = KEY_TO_DIRECTION[event.key];
   if (!requested) {
     return; // 방향키가 아니면 무시
   }
@@ -487,13 +521,20 @@ window.addEventListener("keydown", (event) => {
   // 방향키의 브라우저 기본 동작(페이지 스크롤)을 막음.
   // 이걸 안 하면 방향키를 누를 때마다 뱀 조작과 별개로 화면 전체가 위아래/좌우로 스크롤되며 흔들려 보임
   event.preventDefault();
+  changeDirection(requested);
+});
 
-  // 현재 진행 방향의 정반대인지 확인 (x, y 부호가 둘 다 반대)
-  const isOpposite = requested.x === -direction.x && requested.y === -direction.y;
-  if (!isOpposite) {
-    // 다음 tick에서 반영될 방향만 갱신 (direction은 tick()에서 확정됨)
-    nextDirection = requested;
-  }
+// 모바일 등 터치 화면용 D-pad. data-dir 값을 방향 벡터로 바꿔 키보드와 동일하게 처리
+const DPAD_DIRECTION = {
+  up: { x: 0, y: -1 },
+  down: { x: 0, y: 1 },
+  left: { x: -1, y: 0 },
+  right: { x: 1, y: 0 },
+};
+document.querySelectorAll(".dpad-btn").forEach((btn) => {
+  btn.addEventListener("click", () => {
+    changeDirection(DPAD_DIRECTION[btn.dataset.dir]);
+  });
 });
 
 startBtn.addEventListener("click", startGame);

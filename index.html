@@ -38,11 +38,22 @@
       <div id="game-over-overlay" class="overlay hidden">
         <!-- 퀘스트 성공 시 이미지 주변에 터지는 폭죽 조각들이 JS로 채워지는 자리 -->
         <div id="confetti-container" class="confetti-container"></div>
-        <!-- 퀘스트 성공 시에만 보이는 아이콘 (게임 오버 때는 JS가 hidden 처리) -->
-        <img id="success-icon" class="success-icon hidden" src="success-icon.png" alt="퀘스트 성공" />
+        <!-- 퀘스트 성공 시에만 보이는 트로피 + 팡파레 섬광 효과 (게임 오버 때는 JS가 hidden 처리) -->
+        <div class="trophy-wrap">
+          <div id="trophy-burst" class="trophy-burst hidden" aria-hidden="true"></div>
+          <span id="success-icon" class="success-icon hidden">🏆</span>
+        </div>
         <p id="overlay-message">게임 오버</p>
         <button id="restart-btn">다시 시작</button>
       </div>
+    </div>
+
+    <!-- 모바일 터치 조작용 방향 버튼. 키보드 방향키와 동일한 로직(changeDirection)을 사용함 -->
+    <div class="dpad" id="dpad">
+      <button type="button" class="dpad-btn dpad-up" data-dir="up" aria-label="위로">▲</button>
+      <button type="button" class="dpad-btn dpad-left" data-dir="left" aria-label="왼쪽으로">◀</button>
+      <button type="button" class="dpad-btn dpad-right" data-dir="right" aria-label="오른쪽으로">▶</button>
+      <button type="button" class="dpad-btn dpad-down" data-dir="down" aria-label="아래로">▼</button>
     </div>
 
     <!-- 난이도 선택 + 시작/일시정지 버튼을 한 컨트롤 영역으로 묶음.
@@ -64,11 +75,10 @@
         <!-- value에 있는 공백은 buildQuestCells()가 줄바꿈 기준으로 쓰는 표시라 "SNAKE"를
              "SNA"/"KE" 두 줄로 나누기 위한 것. 드롭다운에는 원래 철자(공백 없이) 그대로 보여줌 -->
         <select id="quest-phrase" disabled>
-          <option value="GAME" selected>GAME</option>
           <option value="SNA KE">SNAKE</option>
-          <option value="NCT 127">NCT 127</option>
-          <option value="DY♥ LOVE">DY♥ LOVE</option>
-          <option value="MISS YOU">MISS YOU</option>
+          <option value="GAME" selected>GAME</option>
+          <option value="GOOD LUCK">GOOD LUCK</option>
+          <option value="SPE CIAL">SPECIAL</option>
         </select>
       </div>
 
